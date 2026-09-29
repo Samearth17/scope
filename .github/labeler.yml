@@ -49,6 +49,12 @@
           - ".agents/skills/**"
           - "docs/architecture/skills.md"
 
+"area: scheduler":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "apps/scheduler/**"
+          - "docs/architecture/queue-scheduler.md"
+
 "area: worker":
   - changed-files:
       - any-glob-to-any-file:
