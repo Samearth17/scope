@@ -35,13 +35,13 @@
 
 "area: post-processing":
   - changed-files:
-      - any-glob-to-any-file: "apps/workers/post-processor/**"
+      - any-glob-to-any-file:
+          - "apps/workers/post-processor/**"
+          - "docs/architecture/post-processing.md"
 
 "area: reporting":
   - changed-files:
-      - any-glob-to-any-file:
-          - "apps/workers/report-generator/**"
-          - "docs/architecture/post-processing.md"
+      - any-glob-to-any-file: "apps/workers/report-generator/**"
 
 "area: skills":
   - changed-files:
