@@ -120,7 +120,7 @@ class ScopeShowreel extends HTMLElement {
 		}, { signal });
 		document.addEventListener('visibilitychange', syncPlayback, { signal });
 		this.observer = new IntersectionObserver(([entry]) => {
-			visible = entry.isIntersecting;
+			visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
 			syncPlayback();
 		}, { threshold: 0.25 });
 		this.observer.observe(this);
