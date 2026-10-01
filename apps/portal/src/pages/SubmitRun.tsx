@@ -264,7 +264,7 @@ export function SubmitRun() {
     queryFn: () => api.listAgents({ includeDeleted: true }),
   });
 
-  const { data: mcpServers = [] } = useQuery({
+  const { data: mcpServers = [], isSuccess: mcpServersLoaded } = useQuery({
     queryKey: ["mcp-servers"],
     queryFn: () => api.listMcpServers(),
   });
@@ -288,6 +288,11 @@ export function SubmitRun() {
 
   // ─── Derived ────────────────────────────────────────────────────────────
   const activeMcpServers = mcpServers.filter((s: McpServerDocument) => !s.deletedAt);
+  // Selections carried in from a profile or resubmit whose server is gone from the
+  // active project; surfaced so they are visible and can be cleared.
+  const unavailableSelectedMcpServers = mcpServersLoaded
+    ? selectedMcpServers.filter((id) => !activeMcpServers.some((s: McpServerDocument) => s._id === id))
+    : [];
   const activeAgents = agents.filter((a: CodingAgent) => !a.deletedAt);
   const availableAgents = agents.filter(isAgentAvailable);
   const agentNameById = new Map(agents.map((agent) => [agent._id, agent.name]));
@@ -458,14 +463,6 @@ export function SubmitRun() {
   };
 
   const handleMcpServerCreated = (server: McpServerDocument) => {
-    queryClient.setQueryData<McpServerDocument[]>(["mcp-servers"], (previous) => {
-      const existing = previous ?? [];
-      if (existing.some((item) => item._id === server._id)) {
-        return existing.map((item) => (item._id === server._id ? server : item));
-      }
-      return [server, ...existing];
-    });
-    void queryClient.invalidateQueries({ queryKey: ["mcp-servers"] });
     setSelectedMcpServers((prev) => (prev.includes(server._id) ? prev : [...prev, server._id]));
     setMcpOpen(true);
     setCreateMcpOpen(false);
@@ -1862,36 +1859,63 @@ export function SubmitRun() {
                 New MCP server…
               </Button>
             </div>
-            {activeMcpServers.length === 0 ? (
+            {activeMcpServers.length === 0 && selectedMcpServers.length === 0 ? (
               <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                No MCP servers configured yet. Create one to attach it to this run.
+                {mcpServersLoaded
+                  ? "No MCP servers configured yet. Create one to attach it to this run."
+                  : "Loading MCP servers…"}
               </p>
             ) : (
-              activeMcpServers.map((s: McpServerDocument) => (
-                <label
-                  key={s._id}
-                  className={`flex items-center gap-3 rounded-md border p-3 transition-colors ${profileLocked ? "opacity-60" : "cursor-pointer hover:bg-accent/50"}`}
-                >
-                  <Checkbox
-                    checked={selectedMcpServers.includes(s._id)}
-                    disabled={profileLocked}
-                    onCheckedChange={(checked) => {
-                      setSelectedMcpServers((prev) =>
-                        checked ? [...prev, s._id] : prev.filter((id) => id !== s._id)
-                      );
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{s._id}</span>
-                      <Badge variant="outline" className="text-xs uppercase">{s.type}</Badge>
+              <>
+                {activeMcpServers.map((s: McpServerDocument) => (
+                  <label
+                    key={s._id}
+                    className={`flex items-center gap-3 rounded-md border p-3 transition-colors ${profileLocked ? "opacity-60" : "cursor-pointer hover:bg-accent/50"}`}
+                  >
+                    <Checkbox
+                      checked={selectedMcpServers.includes(s._id)}
+                      disabled={profileLocked}
+                      onCheckedChange={(checked) => {
+                        setSelectedMcpServers((prev) =>
+                          checked ? [...prev, s._id] : prev.filter((id) => id !== s._id)
+                        );
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm">{s._id}</span>
+                        <Badge variant="outline" className="text-xs uppercase">{s.type}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {s.name}{s.description ? ` — ${s.description}` : ""}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {s.name}{s.description ? ` — ${s.description}` : ""}
-                    </p>
-                  </div>
-                </label>
-              ))
+                  </label>
+                ))}
+                {unavailableSelectedMcpServers.map((id) => (
+                  <label
+                    key={id}
+                    className={`flex items-center gap-3 rounded-md border border-dashed p-3 transition-colors ${profileLocked ? "opacity-60" : "cursor-pointer hover:bg-accent/50"}`}
+                  >
+                    <Checkbox
+                      checked
+                      disabled={profileLocked}
+                      onCheckedChange={(checked) => {
+                        if (!checked) setSelectedMcpServers((prev) => prev.filter((x) => x !== id));
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm">{id}</span>
+                        <Badge variant="outline" className="text-xs text-muted-foreground">unavailable</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        Not found in the active project.
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </>
             )}
           </div>
         </CollapsibleCard>

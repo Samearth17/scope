@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   McpServerDocument,
@@ -57,6 +57,15 @@ export function McpServerForm({
   showCancel = true,
   stickyFooter = false,
 }: McpServerFormProps) {
+  const queryClient = useQueryClient();
+
+  // Load the active project's servers so we can flag a duplicate slug before submit.
+  // (The list is project-scoped; the API is the source of truth and also 409s.)
+  const { data: existingServers = [] } = useQuery({
+    queryKey: ["mcp-servers"],
+    queryFn: () => api.listMcpServers(),
+  });
+
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
@@ -94,6 +103,16 @@ export function McpServerForm({
     mutationFn: api.createMcpServer,
     onSuccess: (data) => {
       toast.success(`MCP server "${data.name}" created`);
+      // Seed the shared list so pickers can select the new server immediately,
+      // then refetch to pick up any server-side normalization.
+      queryClient.setQueryData<McpServerDocument[]>(["mcp-servers"], (previous) => {
+        const existing = previous ?? [];
+        if (existing.some((item) => item._id === data._id)) {
+          return existing.map((item) => (item._id === data._id ? data : item));
+        }
+        return [data, ...existing];
+      });
+      void queryClient.invalidateQueries({ queryKey: ["mcp-servers"] });
       onCreated(data);
     },
     onError: (error) => {
@@ -101,10 +120,17 @@ export function McpServerForm({
     },
   });
 
-  const isValid = slug && SLUG_REGEX.test(slug) && name && (isStdio ? !!command : !!url);
+  // A server's slug must be unique within the project. The list only holds active
+  // servers, so this catches active collisions instantly; soft-deleted collisions are
+  // caught by the API's 409 (surfaced via the mutation's onError toast).
+  const slugExists = existingServers.some((s) => s._id === slug);
+  const isValid = slug && SLUG_REGEX.test(slug) && !slugExists && name && (isStdio ? !!command : !!url);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // React propagates synthetic events through portals, so without this a submit
+    // from the inline dialog would also fire an enclosing page form (e.g. Submit Run).
+    e.stopPropagation();
     if (!isValid) return;
 
     if (isStdio) {
@@ -178,6 +204,11 @@ export function McpServerForm({
               {slug && !SLUG_REGEX.test(slug) && (
                 <p className="text-xs text-destructive">
                   Invalid slug format
+                </p>
+              )}
+              {slug && SLUG_REGEX.test(slug) && slugExists && (
+                <p className="text-xs text-destructive">
+                  An MCP server with this slug already exists in this project. Use the edit flow to change it.
                 </p>
               )}
             </div>
@@ -381,7 +412,12 @@ export function McpServerForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={!isValid || createMutation.isPending} className="gap-1.5">
+        <Button
+          type="submit"
+          data-command-enter
+          disabled={!isValid || createMutation.isPending}
+          className="gap-1.5"
+        >
           {createMutation.isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AgentBadge } from "@/components/AgentBadge";
 import { useStrictAgentCapabilities } from "@/hooks/useStrictAgentCapabilities";
@@ -31,7 +31,6 @@ import type { ResourceBindingSpec } from "@/types";
 export function NewProfileVersion() {
   const { profileId } = useParams<{ profileId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const strictAgentCapabilities = useStrictAgentCapabilities();
 
   // Configuration fields
@@ -177,14 +176,6 @@ export function NewProfileVersion() {
   const ev = profile?.version;
 
   const handleMcpServerCreated = (server: McpServerDocument) => {
-    queryClient.setQueryData<McpServerDocument[]>(["mcp-servers"], (previous) => {
-      const existing = previous ?? [];
-      if (existing.some((item) => item._id === server._id)) {
-        return existing.map((item) => (item._id === server._id ? server : item));
-      }
-      return [server, ...existing];
-    });
-    void queryClient.invalidateQueries({ queryKey: ["mcp-servers"] });
     setSelectedMcpServers((prev) => (prev.includes(server._id) ? prev : [...prev, server._id]));
     setCreateMcpOpen(false);
   };
