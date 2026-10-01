@@ -337,6 +337,7 @@ Automations depend on these exact names:
 | Test Improver issues, PRs, and monthly-summary searches | `type: automation`, `topic: testing` |
 | Dependabot | `type: dependencies`, plus `language: javascript` or `language: rust` |
 | Pull Request Labeler | Area, topic, language, and type labels from `.github/labeler.yml` |
+| Website open calls ([Contribute page](https://microsoft.github.io/scope/community/contribute/)) | Open, unassigned `good first issue` or `help wanted` issues |
 
 Use `area: reporting` for Scope's benchmark reporting component, not daily repository activity.
 Worker upgrade routing uses `type: worker-update`, not the broader `area: worker`.
