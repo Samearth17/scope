@@ -26,7 +26,10 @@ for coding conventions, testing requirements, and the pull request process.
 
 Open pull requests against `microsoft/scope` on `main`, including when working
 from a fork. Keep changes focused, include appropriate tests, and update
-affected documentation.
+affected documentation. See
+[Reviewing and merging community contributions](https://github.com/microsoft/scope/blob/main/CONTRIBUTING.md#reviewing-and-merging-community-contributions)
+for what to expect during review, including acknowledgement and follow-up
+timelines.
 
 Most contributions require the
 [Microsoft Contributor License Agreement](https://cla.opensource.microsoft.com).

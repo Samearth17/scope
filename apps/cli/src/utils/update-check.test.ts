@@ -4,75 +4,62 @@
 import { execSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
-}));
+vi.mock("node:child_process", () => ({ execSync: vi.fn() }));
 
-const mockedExecSync = vi.mocked(execSync);
-const mockedFetch = vi.fn<typeof fetch>();
-
-describe("CLI release source", () => {
+describe("public CLI release lookup", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.resetAllMocks();
     vi.stubEnv("SCOPE_RELEASES_URL", "");
     vi.stubEnv("GH_TOKEN", "");
     vi.stubEnv("GITHUB_TOKEN", "");
-    vi.stubGlobal("fetch", mockedFetch);
+    vi.stubEnv("SCOPE_TOKEN", "scope-service-token");
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.clearAllMocks();
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
-  it("queries microsoft/scope with gh", async () => {
-    mockedExecSync.mockReturnValue("cli/v1.2.3\n");
-    const { fetchLatestVersion, RELEASES_REPO } = await import("./update-check.js");
-
+  it("uses the public repository anonymously when gh is unavailable, without leaking the Scope bearer", async () => {
+    vi.mocked(execSync).mockImplementation(() => { throw new Error("gh unavailable"); });
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify([{ tag_name: "cli/v1.2.3" }])));
+    vi.stubGlobal("fetch", fetchMock);
+    const { RELEASES_REPO, RELEASES_URL, fetchLatestVersion } = await import("./update-check.js");
     expect(RELEASES_REPO).toBe("microsoft/scope");
+    expect(RELEASES_URL).toBe("https://api.github.com/repos/microsoft/scope/releases");
     expect(await fetchLatestVersion()).toBe("1.2.3");
-    expect(mockedExecSync).toHaveBeenCalledWith(
-      expect.stringContaining("gh release list --repo microsoft/scope"),
-      expect.anything(),
-    );
-    expect(mockedFetch).not.toHaveBeenCalled();
-  });
-
-  it("uses the same repository for the REST fallback", async () => {
-    mockedExecSync.mockImplementation(() => {
-      throw new Error("gh unavailable");
+    expect(fetchMock).toHaveBeenCalledWith(RELEASES_URL, {
+      signal: expect.any(AbortSignal),
+      headers: { Accept: "application/vnd.github.v3+json" },
     });
-    mockedFetch.mockResolvedValue(Response.json([
-      { tag_name: "other/v9.0.0" },
-      { tag_name: "cli/v1.2.3" },
-    ]));
-    const { fetchLatestVersion } = await import("./update-check.js");
-
-    expect(await fetchLatestVersion()).toBe("1.2.3");
-    expect(mockedFetch).toHaveBeenCalledWith(
-      "https://api.github.com/repos/microsoft/scope/releases",
-      expect.anything(),
-    );
   });
 
-  it("preserves the custom releases URL without invoking gh", async () => {
-    vi.stubEnv("SCOPE_RELEASES_URL", "http://localhost:9999/releases");
-    mockedFetch.mockResolvedValue(Response.json([{ tag_name: "cli/v2.0.0" }]));
+  it("targets the same public repository through gh when available", async () => {
+    vi.mocked(execSync).mockReturnValue("cli/v2.0.0\n");
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
     const { fetchLatestVersion } = await import("./update-check.js");
-
     expect(await fetchLatestVersion()).toBe("2.0.0");
-    expect(mockedExecSync).not.toHaveBeenCalled();
-    expect(mockedFetch).toHaveBeenCalledWith(
-      "http://localhost:9999/releases",
-      expect.anything(),
-    );
+    expect(execSync).toHaveBeenCalledWith(expect.stringContaining("gh release list --repo microsoft/scope"), expect.anything());
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves a custom releases URL without invoking gh", async () => {
+    vi.stubEnv("SCOPE_RELEASES_URL", "http://localhost:9999/releases");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(Response.json([{ tag_name: "cli/v2.0.0" }]));
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchLatestVersion } = await import("./update-check.js");
+    expect(await fetchLatestVersion()).toBe("2.0.0");
+    expect(execSync).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:9999/releases", expect.anything());
   });
 
   it("returns no version when no CLI release has been published", async () => {
-    mockedExecSync.mockReturnValue("");
+    vi.mocked(execSync).mockReturnValue("");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(Response.json([{ tag_name: "other/v9.0.0" }]));
+    vi.stubGlobal("fetch", fetchMock);
     const { fetchLatestVersion } = await import("./update-check.js");
-
     expect(await fetchLatestVersion()).toBeUndefined();
   });
 });

@@ -172,9 +172,10 @@ describe("update command", () => {
       expect.stringContaining(".tmp"),
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'gh api repos/microsoft/scope/contents/website/install-cli.sh -H "Accept: application/vnd.github.raw" | bash',
-      ),
+      expect.stringContaining("Update failed"),
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("https://raw.githubusercontent.com/microsoft/scope/main/install-cli.sh"),
     );
   });
 

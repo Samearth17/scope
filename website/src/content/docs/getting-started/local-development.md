@@ -114,10 +114,14 @@ full workflow.
 
 ### From the CLI
 
-Build the CLI and its shared dependency, then explore the available commands:
+Build the CLI and its shared dependency, then point it at your local API. The
+CLI has no default API URL, so set `SCOPE_API_URL` explicitly using the
+`API_PORT` value from the generated `.env` (`3100` unless your worktree
+offsets it):
 
 ```bash
 pnpm build:cli
+export SCOPE_API_URL=http://localhost:3100
 pnpm cli --help
 pnpm cli project list
 ```
@@ -133,9 +137,8 @@ pnpm cli run list
 
 Replace `<project-id>` with an actual ID. Submission requires a selected
 project, a task, and evaluation criteria. Use `--project <project-id>` or
-`SCOPE_PROJECT` to select a project explicitly in automation. The CLI reads
-local port settings from the generated `.env`; set `SCOPE_API_URL` to target
-another instance. See
+`SCOPE_PROJECT` to select a project explicitly in automation. Set
+`SCOPE_API_URL` or pass `-u <url>` to target another instance. See
 [Submitting requests (CLI)](/guides/submitting-requests-cli/) for submission
 examples.
 
