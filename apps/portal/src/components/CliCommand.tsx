@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { CliCommand as CliCommandValue } from "@/lib/cli/buildCommand";
+import { CLI_INSTALL_COMMAND, buildEnvCommand, type CliCommand as CliCommandValue } from "@/lib/cli/buildCommand";
+import { useOptionalSelectedProjectId } from "@/contexts/ProjectContext";
 
 export interface CliCommandProps {
   /** The command to display. Recompute in the parent so it tracks live state. */
@@ -39,12 +40,8 @@ export interface CliCommandProps {
   align?: "start" | "center" | "end";
 }
 
-/** The CLI installer one-liner (see docs/architecture/cli-distribution.md). */
-const INSTALL_COMMAND =
-  'gh api repos/growth-ecosystems/scope-doc/contents/install-cli.sh -H "Accept: application/vnd.github.raw" | bash';
-
-/** Public documentation home for the Scope CLI. */
-const DOCS_URL = "https://aka.ms/projectscope/doc";
+/** Public documentation for installing and using the Scope CLI. */
+const DOCS_URL = "https://microsoft.github.io/scope/getting-started/install-cli/";
 
 /**
  * The API base URL to suggest for `SCOPE_API_URL`.
@@ -130,6 +127,7 @@ export function CliCommand({
   className,
   disabled = false,
 }: CliCommandProps) {
+  const projectId = useOptionalSelectedProjectId();
   const trigger = label ? (
     <Button
       type="button"
@@ -173,14 +171,21 @@ export function CliCommand({
 
         <div className="min-w-0 space-y-5 py-1">
           <Step n={1} label="Install the Scope CLI (one-time).">
-            <CommandBlock copyValue={INSTALL_COMMAND} toastLabel="Install command copied" />
+            <CommandBlock copyValue={CLI_INSTALL_COMMAND} toastLabel="Install command copied" />
             <p className="text-xs text-muted-foreground">
-              Requires Node.js 20+ and an authenticated <code className="font-mono">gh</code> CLI.
+              Requires Node.js 20+ and <code className="font-mono">curl</code>.
             </p>
           </Step>
 
-          <Step n={2} label="Point the CLI at this API.">
-            <CommandBlock copyValue={`export SCOPE_API_URL=${apiUrl()}`} toastLabel="Environment variable copied" />
+          <Step n={2} label={projectId ? "Point the CLI at this API and project." : "Point the CLI at this API."}>
+            <CommandBlock
+              copyValue={buildEnvCommand(apiUrl(), projectId)}
+              toastLabel="Environment variables copied"
+            />
+            <p className="text-xs text-muted-foreground">
+              If this deployment requires sign-in, also export <code className="font-mono">SCOPE_TOKEN</code> with an
+              access token for the API. Credentials are never included here.
+            </p>
           </Step>
 
           <Step n={3} label="Run the command.">

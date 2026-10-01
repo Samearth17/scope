@@ -749,8 +749,8 @@ export function SubmitRun() {
   const lastVariationDraft = variationDrafts.length > 0 ? variationDrafts[variationDrafts.length - 1] : null;
 
   // Equivalent `scope run submit` command for the "Copy as CLI" affordance.
+  // Mirrors the payload built in doSubmit() so the CLI submits the same run(s).
   const submitCli = useMemo(() => {
-    const inVariationMode = !!selectedProfileId && selectedVariationCount > 0;
     const baseProfileSpec = selectedProfileId
       ? selectedProfileVersion
         ? `${selectedProfileId}@${selectedProfileVersion}`
@@ -767,15 +767,24 @@ export function SubmitRun() {
       skills: selectedSkills,
       extensions: selectedExtensions,
       agentVersion: selectedAgentVersion || undefined,
+      codebase: selectedCodebaseSpec,
+      resources: selectedResourceSpecs,
+      agentsMd,
+      gates: gateConfigs,
       baseProfileId: baseProfileSpec,
+      profileVariations: variationDrafts
+        .filter((v) => v.profileId.trim().length > 0)
+        .map((v) => (v.profileVersion ? `${v.profileId}@${v.profileVersion}` : v.profileId)),
       occurrences,
       priority,
-      variationMode: inVariationMode,
     });
+    // gateConfigs is rebuilt every render; key it by content instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     task, pickedCriteria, worker, model, reasoningEffort, maxIterations,
     selectedMcpServers, selectedSkills, selectedExtensions, selectedAgentVersion,
-    selectedProfileId, selectedProfileVersion, occurrences, priority, selectedVariationCount,
+    selectedCodebaseSpec, selectedResourceSpecs, agentsMd, JSON.stringify(gateConfigs),
+    selectedProfileId, selectedProfileVersion, variationDrafts, occurrences, priority,
   ]);
   const lastVariationName = lastVariationDraft
     ? profileList.find((p) => p._id === lastVariationDraft.profileId)?.name

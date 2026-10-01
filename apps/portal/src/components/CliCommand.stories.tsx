@@ -29,19 +29,22 @@ export const RunGet: Story = {
   },
 };
 
-/** List command reflecting active filters, with a parity note. */
-export const RunListWithNote: Story = {
+/** List command reflecting the active filters and sort. */
+export const RunListFiltered: Story = {
   args: {
     command: buildRunList({
-      worker: "coder-vscode-web",
+      workers: ["coder-vscode-web"],
+      statuses: ["done"],
+      outcomes: ["failed"],
       turns: "5",
       turnsOp: "gte",
-      unsupportedFilters: ["status", "outcome", "model"],
+      sortBy: "duration",
+      sortDir: "desc",
     }),
   },
 };
 
-/** Labeled trigger used in the Submit Run footer. */
+/** Labeled trigger used in the Submit Run footer, with a parity note. */
 export const SubmitLabeled: Story = {
   args: {
     label: "CLI",
@@ -52,11 +55,27 @@ export const SubmitLabeled: Story = {
       worker: "coder-acp-claude-code",
       model: "claude-sonnet-4.5",
       occurrences: 5,
+      priority: 3,
     }),
   },
 };
 
-/** Bulk action over a multi-id selection (loop form). */
+/** Base profile + variations: the variations go through a JSON file. */
+export const SubmitProfileVariations: Story = {
+  args: {
+    label: "CLI",
+    title: "Submit from the CLI",
+    command: buildRunSubmit({
+      task: "Create a Snake game using React",
+      criteria: ["has-tests"],
+      baseProfileId: "prof_base@2",
+      profileVariations: ["prof_fast", "prof_thorough@4"],
+      occurrences: 3,
+    }),
+  },
+};
+
+/** Bulk delete over a multi-id selection (loop form). */
 export const BulkLoop: Story = {
   args: {
     title: "Bulk action from the CLI",

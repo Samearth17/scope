@@ -252,26 +252,45 @@ unique and need no project. See
 To reinforce CLI ⇄ Portal parity, the Portal surfaces the exact `scope` command
 equivalent to a user's current view via a terminal-glyph (`>_`) button that
 opens a GitHub-style modal with step-by-step instructions: (1) install the CLI,
-(2) point it at the API, (3) run the generated command — each with its own copy
-button, plus any parity caveats.
+(2) point it at the API and project, (3) run the generated command — each with
+its own copy button, plus any parity caveats.
 
 - **Component:** `apps/portal/src/components/CliCommand.tsx` — a `Dialog`-based
   modal mirroring GitHub's "Merging via command line" UX. Renders numbered steps
-  (install one-liner from `cli-distribution.md`, `SCOPE_API_URL` pointing at the
-  current origin, then the generated command) with per-block copy buttons and a
-  notes callout for parity caveats.
+  with per-block copy buttons and a notes callout for parity caveats:
+  1. the public installer one-liner from [Installation](#installation);
+  2. `export SCOPE_API_URL=<current origin>` plus, when a project is selected,
+     `export SCOPE_PROJECT=<id>` (see [Project scoping](#project-scoping)) — with
+     a reminder to export `SCOPE_TOKEN` on deployments that require sign-in;
+  3. the generated command.
 - **Builders:** `apps/portal/src/lib/cli/buildCommand.ts` — pure functions that
-  translate Portal state into a command. They only emit flags the CLI actually
-  supports; anything the CLI can't express (e.g. Portal-only filters, priority,
-  occurrences) is surfaced as a `note` rather than dropped. Secrets are never
-  embedded. Unit-tested in `buildCommand.test.ts` (the tests double as a living
-  parity check — see issue #1004).
+  translate Portal state into a command, mirroring the flags in
+  `apps/cli/src/commands/run.ts`. They only emit flags the CLI actually supports;
+  anything the CLI can't express is surfaced as a `note` rather than dropped.
+  Secrets (including `SCOPE_TOKEN`) are never embedded. Unit-tested in
+  `buildCommand.test.ts` (the tests double as a living parity check — see issue
+  #1004).
 - **Mount points (Phase 1):**
-  - `RunDetail` header → `scope run get -i <id>` (reactive to the open run).
-  - `RunsList` header → `scope run list` reflecting active filters/sort.
-  - `RunsList` bulk bar → id-list action over the selection (`cancel` is
-    variadic; `delete`/`retry`/`download` use a `for` loop for >1 id).
-  - `SubmitRun` footer → `scope run submit …` built live from the form.
+  - `RunDetail` header and `RunPreviewPanel` → `scope run get -i <id>`.
+  - `RunsList` header → `scope run list` with every active filter (`-w`,
+    `--status`, `--outcome`, `--task`, `--profile`, `--criteria`, `--model`,
+    `--os`, `--priority`, `--agent-version`, `--search`,
+    `--created-after`/`--created-before`, `--submission-id`, `--turns`,
+    `--max-iterations`) plus `--sort-by`/`--sort-dir`, built from the same values
+    the runs query sends.
+  - `RunsList` bulk bar → `delete` over the selection (a `for` loop for >1 id,
+    since `delete`/`retry` take one id). The builder also emits `cancel -i <ids…>`
+    (variadic) and `download-batch -i <ids…>`; pause, resume, priority and
+    re-submit are noted as Portal-only.
+  - `SubmitRun` footer → `scope run submit …` mirroring the submit payload:
+    `-m`, `-c`, `-w` (always emitted outside variation mode — the CLI has no
+    default worker), `--model`, `--reasoning-effort`, `--max-iterations` (omitted
+    at the API default of 10), `--count` (occurrences), `--mcp-servers`,
+    `--skills`, `--extensions`, `--agent-version`, `--codebase`, `--resources` +
+    `--resource-param`, `--agents-md`, `--gates` (inline JSON) and `--profile`.
+    With profile variations, per-run worker/model/tool flags are dropped and
+    `--profile-variations-file profile-variations.json` is emitted with a note
+    showing the file's contents. Priority has no `run submit` flag and is noted.
 
 Subsequent phases extend the same `<CliCommand command={…} />` pattern to the
 remaining resource pages (Criteria, Profiles, Task Prompts, MCP, Reports, etc.).
