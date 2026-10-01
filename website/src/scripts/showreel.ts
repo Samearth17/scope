@@ -25,8 +25,10 @@ class ScopeShowreel extends HTMLElement {
 		const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 		let wantsPlayback = !motion.matches;
 		let intersecting = false;
-		// At least a quarter is on screen, or the user pressed Play while part of it was.
+		// At least a quarter is on screen.
 		let visible = false;
+		// The user pressed Play while part of the player was on screen; holds until it leaves the viewport.
+		let manualPlay = false;
 		let failed = false;
 		let playbackRequest = 0;
 		// Position to restore once a theme swap's new source has metadata.
@@ -76,7 +78,7 @@ class ScopeShowreel extends HTMLElement {
 		};
 		const syncPlayback = () => {
 			const request = ++playbackRequest;
-			const onScreen = visible && !document.hidden;
+			const onScreen = (visible || manualPlay) && !document.hidden;
 			// Off-screen players keep their current source and position until they are seen again.
 			if (onScreen && sourceIsStale()) swapSource();
 			video.autoplay = wantsPlayback && onScreen;
@@ -102,8 +104,8 @@ class ScopeShowreel extends HTMLElement {
 
 		button.addEventListener('click', () => {
 			wantsPlayback = video.paused;
-			// An explicit Play on a partly visible player overrides the autoplay threshold until it scrolls out.
-			if (wantsPlayback && intersecting) visible = true;
+			// An explicit Play overrides the autoplay threshold; Pause clears the override.
+			manualPlay = wantsPlayback && intersecting;
 			syncPlayback();
 		}, { signal });
 		video.addEventListener('play', renderPlayback, { signal });
@@ -127,6 +129,7 @@ class ScopeShowreel extends HTMLElement {
 		this.observer = new IntersectionObserver((entries) => {
 			const entry = entries[entries.length - 1];
 			intersecting = entry.isIntersecting;
+			if (!intersecting) manualPlay = false;
 			visible = intersecting && entry.intersectionRatio >= 0.25;
 			syncPlayback();
 		}, { threshold: [0, 0.25] });
