@@ -16,17 +16,20 @@
  * (e.g. `mcp-gateway-ms-learn__microsoft_docs_search`): the `__` lives only
  * inside the tool portion. A CLI-bundled server that isn't routed through our
  * gateway appears as `<cliServerName>-<toolName>` with no `__` (e.g.
- * `github-mcp-server-search_code`); since it isn't in the run's configured MCP
- * servers, it correctly resolves to a built-in (non-MCP) tool. Built-in tools
- * (e.g. `bash`, `view`, `edit`) carry no server prefix.
+ * `github-mcp-server-search_code`), so it never resolves to a configured MCP
+ * server and renders as a built-in tool. Built-in tools (e.g. `bash`, `view`,
+ * `edit`) carry no server prefix.
  *
  * Given the list of MCP server slugs configured on a run, we strip an optional
  * leading `mcp-gateway-` prefix, then detect the configured server slug and
  * split out the server + tool name for display.
  */
 
-/** Server name the Copilot worker registers the gateway under with the CLI. */
-const GATEWAY_SERVER_NAME = "mcp-gateway";
+/** Prefix the Copilot CLI adds to tools of the `mcp-gateway` server it is given. */
+const GATEWAY_PREFIX = "mcp-gateway-";
+
+/** MCPJungle's separator between a server slug and its tool name. */
+const SLUG_TOOL_SEPARATOR = "__";
 
 export interface McpToolInfo {
   /** Whether this tool call resolved to a configured MCP server. */
@@ -39,39 +42,25 @@ export interface McpToolInfo {
 
 /**
  * Resolve MCP metadata for a tool call name against the run's configured MCP
- * server slugs. Tries the `__` separator first (current gateway format), then
- * falls back to a legacy `-` separator. A leading `mcp-gateway__`/`mcp-gateway-`
- * prefix (added by the CLI when it re-namespaces the gateway's tools) is
- * stripped before matching. When multiple prefixes match, the longest server
- * slug wins so overlapping names resolve to the most specific match.
+ * server slugs. An optional leading `mcp-gateway-` prefix is stripped, then the
+ * remainder must be `<slug>__<tool>` for one of the configured slugs. When
+ * multiple slugs match, the longest wins so overlapping slugs resolve to the
+ * most specific server.
  */
 export function resolveMcpToolName(
   name: string,
   mcpServerNames: readonly string[] = [],
 ): McpToolInfo {
-  // Strip an optional gateway prefix so both `<slug>__<tool>` and
-  // `mcp-gateway__<slug>__<tool>` resolve identically.
-  let candidate = name;
-  for (const sep of ["__", "-"]) {
-    const gatewayPrefix = `${GATEWAY_SERVER_NAME}${sep}`;
-    if (candidate.startsWith(gatewayPrefix) && candidate.length > gatewayPrefix.length) {
-      candidate = candidate.slice(gatewayPrefix.length);
-      break;
-    }
-  }
+  const candidate = name.startsWith(GATEWAY_PREFIX) ? name.slice(GATEWAY_PREFIX.length) : name;
 
   let best: { server: string; tool: string } | undefined;
 
   for (const server of mcpServerNames) {
     if (!server) continue;
-    for (const sep of ["__", "-"]) {
-      const prefix = `${server}${sep}`;
-      if (candidate.startsWith(prefix) && candidate.length > prefix.length) {
-        const tool = candidate.slice(prefix.length);
-        if (!best || server.length > best.server.length) {
-          best = { server, tool };
-        }
-        break;
+    const prefix = `${server}${SLUG_TOOL_SEPARATOR}`;
+    if (candidate.startsWith(prefix) && candidate.length > prefix.length) {
+      if (!best || server.length > best.server.length) {
+        best = { server, tool: candidate.slice(prefix.length) };
       }
     }
   }

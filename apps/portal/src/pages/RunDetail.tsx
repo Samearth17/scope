@@ -284,25 +284,10 @@ export function RunDetail() {
     enabled: !!run?.profileId,
   });
 
-  // MCP servers — used to detect and label MCP tool calls in the conversation view.
-  const { data: mcpServers = [] } = useQuery({
-    queryKey: ["mcp-servers"],
-    queryFn: api.listMcpServers,
-  });
-
-  // MCP server slugs (_id) configured on this run. Tools reach the model through the
-  // MCP gateway namespaced as `<serverSlug>__<toolName>` (see mcp-tool-name.ts), so the
-  // slug is the prefix we match on. The display name is never part of the tool-call name.
-  const mcpServerNames = useMemo(() => {
-    const configured = new Set(run?.mcpServers ?? []);
-    const names = new Set<string>();
-    for (const s of mcpServers) {
-      if (configured.has(s._id)) {
-        names.add(s._id);
-      }
-    }
-    return Array.from(names);
-  }, [mcpServers, run?.mcpServers]);
+  // The run's MCP server slugs. Tools reach the model through the MCP gateway namespaced
+  // as `<serverSlug>__<toolName>` (see mcp-tool-name.ts), so the slug is the prefix we
+  // match on. Using the run's own list keeps labels working for since-deleted servers.
+  const mcpServerNames = run?.mcpServers;
 
   // Fetch all attempts when this request has been retried
   const hasMultipleAttempts = (run?.run?.attemptNumber ?? 1) > 1;

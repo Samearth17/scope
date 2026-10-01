@@ -46,11 +46,12 @@ describe("resolveMcpToolName", () => {
     });
   });
 
-  it("accepts the legacy single-hyphen separator", () => {
+  it("does not treat a single-hyphen name as MCP even when the slug is configured", () => {
+    // Only `<slug>__<tool>` comes from the gateway; `<name>-<tool>` is a CLI-bundled
+    // server and must not be mislabeled as one of the run's MCP servers.
     expect(resolveMcpToolName("github-mcp-server-search_code", ["github-mcp-server"])).toEqual({
-      isMcp: true,
-      server: "github-mcp-server",
-      tool: "search_code",
+      isMcp: false,
+      tool: "github-mcp-server-search_code",
     });
   });
 
@@ -64,8 +65,8 @@ describe("resolveMcpToolName", () => {
     });
   });
 
-  it("prefers the longest matching server prefix", () => {
-    const result = resolveMcpToolName("github-mcp-server__search_code", [
+  it("matches the slug that directly precedes __ when slugs share a prefix", () => {
+    const result = resolveMcpToolName("mcp-gateway-github-mcp-server__search_code", [
       "github",
       "github-mcp-server",
     ]);
@@ -77,13 +78,13 @@ describe("resolveMcpToolName", () => {
   });
 
   it("ignores empty server names", () => {
-    expect(resolveMcpToolName("-foo", [""])).toEqual({ isMcp: false, tool: "-foo" });
+    expect(resolveMcpToolName("__foo", [""])).toEqual({ isMcp: false, tool: "__foo" });
   });
 
   it("requires a non-empty tool name after the prefix", () => {
-    expect(resolveMcpToolName("server-", ["server"])).toEqual({
+    expect(resolveMcpToolName("mcp-gateway-server__", ["server"])).toEqual({
       isMcp: false,
-      tool: "server-",
+      tool: "mcp-gateway-server__",
     });
   });
 });
