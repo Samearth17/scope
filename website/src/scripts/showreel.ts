@@ -24,6 +24,8 @@ class ScopeShowreel extends HTMLElement {
 		const { signal } = this.events;
 		const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 		let wantsPlayback = !motion.matches;
+		let intersecting = false;
+		// At least a quarter is on screen, or the user pressed Play while part of it was.
 		let visible = false;
 		let failed = false;
 		let playbackRequest = 0;
@@ -100,6 +102,8 @@ class ScopeShowreel extends HTMLElement {
 
 		button.addEventListener('click', () => {
 			wantsPlayback = video.paused;
+			// An explicit Play on a partly visible player overrides the autoplay threshold until it scrolls out.
+			if (wantsPlayback && intersecting) visible = true;
 			syncPlayback();
 		}, { signal });
 		video.addEventListener('play', renderPlayback, { signal });
@@ -119,10 +123,13 @@ class ScopeShowreel extends HTMLElement {
 			syncPlayback();
 		}, { signal });
 		document.addEventListener('visibilitychange', syncPlayback, { signal });
-		this.observer = new IntersectionObserver(([entry]) => {
-			visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+		// The 0 threshold reports entering and leaving: Chrome keeps isIntersecting false below the smallest threshold.
+		this.observer = new IntersectionObserver((entries) => {
+			const entry = entries[entries.length - 1];
+			intersecting = entry.isIntersecting;
+			visible = intersecting && entry.intersectionRatio >= 0.25;
 			syncPlayback();
-		}, { threshold: 0.25 });
+		}, { threshold: [0, 0.25] });
 		this.observer.observe(this);
 		// The Starlight theme toggle rewrites data-theme on <html>; follow it with the matching cut.
 		this.themeObserver = new MutationObserver(() => {

@@ -170,20 +170,22 @@ poster it paints.
 [showreel.ts](src/scripts/showreel.ts) keeps both video URLs in data
 attributes and assigns the active theme's source only when playback
 starts, when at least a quarter of the player is visible. A
-keyboard-accessible button pauses or resumes it. Scrolling it out of
-view or hiding the tab pauses playback; an explicit user pause persists
-when returning. The button overlays the bottom corner of the video, and
-moves below it on narrow screens so it does not cover the footage. The
+keyboard-accessible button pauses or resumes it. Scrolling it below a
+quarter visible or hiding the tab pauses playback; an explicit user
+pause persists when returning. Selecting Play still starts a player that
+is less than a quarter visible, and it keeps playing until it leaves the
+viewport. The button overlays the bottom corner of the video, and moves
+below it on narrow screens so it does not cover the footage. The
 controls and frame use the landing tokens, so they stay readable over
 either cut.
 
 When the theme changes, a `MutationObserver` on `data-theme` swaps a
 loaded player to the matching cut at the same position, keeping it
 playing or paused. A paused player loads only the frame at that
-position. A player that is off screen, or less than a quarter visible,
-switches to the new poster at once and keeps its current source until it
-is visible again. A player that has not loaded yet only changes its
-poster.
+position. A player that is off screen, or less than a quarter visible
+and not started with Play, switches to the new poster at once and keeps
+its current source until it is visible again. A player that has not
+loaded yet only changes its poster.
 
 Reduced-motion visitors see the poster for their theme without
 downloading either video until they choose to play it. Without
