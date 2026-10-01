@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+// @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import { runsLinkFor } from "./Statistics";
 import type { TaskWorkerGroup } from "@/types";
