@@ -99,7 +99,10 @@ export default defineConfig({
 				},
 				{
 					label: 'Community',
-					items: [{ label: 'Articles & talks', slug: 'community/articles-and-talks' }],
+					items: [
+						{ label: 'Articles & talks', slug: 'community/articles-and-talks' },
+						{ label: 'Contribute', slug: 'community/contribute' },
+					],
 				},
 				{
 					label: 'Getting Started',
