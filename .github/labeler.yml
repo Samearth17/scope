@@ -1,3 +1,7 @@
+"area: api":
+  - changed-files:
+      - any-glob-to-any-file: "apps/api/**"
+
 "area: cicd":
   - changed-files:
       - any-glob-to-any-file:
@@ -54,6 +58,14 @@
       - any-glob-to-any-file:
           - "apps/scheduler/**"
           - "docs/architecture/queue-scheduler.md"
+
+"area: shared":
+  - changed-files:
+      - any-glob-to-any-file: "packages/shared/**"
+
+"area: website":
+  - changed-files:
+      - any-glob-to-any-file: "website/**"
 
 "area: worker":
   - changed-files:
