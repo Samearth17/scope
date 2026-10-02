@@ -18,7 +18,7 @@ The product and this documentation site live in
 │   ├── assets/
 │   ├── components/                  # Astro landing, interactive example, header, page title, site footer
 │   │   ├── community/               # article/talk lists + landing teaser
-│   │   └── contribute/              # open calls for contributions (landing + page)
+│   │   └── contribute/              # open calls + contributor thanks (landing + page)
 │   ├── content/
 │   │   ├── docs/                    # all user-facing pages (.md / .mdx)
 │   │   │   ├── introduction/
@@ -29,13 +29,14 @@ The product and this documentation site live in
 │   │   │   └── community/
 │   │   ├── articles/                # one YAML per published article
 │   │   └── talks/                   # one YAML per talk
-│   ├── data/                        # dev-only sample of the contribution issues list
+│   ├── data/                        # dev-only samples: contribution issues, contributors
 │   ├── openapi/scope-openapi.json   # artifact generated from the API registry
 │   ├── plugins/
 │   │   ├── remark-base-path.mjs    # applies the deployment base to internal links
 │   │   └── remark-http-snippets.mjs # turns ```http blocks into multi-language tabs
 │   ├── scripts/flow-demo.ts         # progressive-enhancement example controller
 │   ├── scripts/contribution-issues*.ts # open calls: data helpers + custom element
+│   ├── scripts/contributors*.ts     # contributor thanks: data helpers + custom element
 │   ├── styles/landing.css           # shared brand tokens + scoped landing styles
 │   └── content.config.ts
 ├── astro.config.mjs                 # sidebar, plugins, starlight-openapi config
@@ -144,13 +145,15 @@ table of contents, code examples, and previous/next navigation.
   separate Portal, CLI, and API entry points. Access requirements are
   explicit rather than promising instant access to a hosted service.
 - **Motion:** limited to the silent showreel, the interactive
-  example, and the open-calls cards (staggered entrance, count-up,
-  cursor glow, a rotation through all open calls), with pause controls
+  example, the open-calls cards (staggered entrance, count-up,
+  cursor glow, a rotation through all open calls), and the
+  contributor avatars (pop-in, hover tooltips), with pause controls
   and reduced-motion support. The logo and documentation chrome remain
   still.
 - **Contribution:** a "Help build Scope" section lists open calls
-  for contributions, refreshed hourly from a data branch without a
-  redeploy. See "Contribution issues" in `AGENTS.md`.
+  for contributions and thanks community contributors, refreshed
+  hourly from a data branch without a redeploy. See "Contribution
+  issues" and "Community contributors" in `AGENTS.md`.
 
 ### Showreel
 
