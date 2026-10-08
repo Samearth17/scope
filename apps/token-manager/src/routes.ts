@@ -372,10 +372,10 @@ export function createKeyRouter(
   // ──────────────────────────────────────────────
   router.post("/api/v1/endpoints/acquire", async (req, res, next) => {
     try {
-      const body = req.body as AcquireEndpointRequest;
+      const body = req.body as Partial<AcquireEndpointRequest> | null | undefined;
 
       if (
-        !body.capability ||
+        !body?.capability ||
         !VALID_ENDPOINT_CAPABILITIES.includes(body.capability)
       ) {
         res.status(400).json({
