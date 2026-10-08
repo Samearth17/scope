@@ -173,20 +173,26 @@ export class TokenManagerClient {
       );
     }
 
-    const result = (await response.json()) as AcquireEndpointResponse;
+    const result: unknown = await response.json();
     if (
+      typeof result !== "object" ||
+      result === null ||
+      !("endpoint" in result) ||
       typeof result.endpoint !== "string" ||
       result.endpoint.trim() === "" ||
+      !("apiKey" in result) ||
       typeof result.apiKey !== "string" ||
       result.apiKey.trim() === "" ||
-      (result.deployment !== undefined && typeof result.deployment !== "string")
+      ("deployment" in result &&
+        result.deployment !== undefined &&
+        typeof result.deployment !== "string")
     ) {
       throw new Error(
         `Invalid endpoint response for capability '${capability}': missing or invalid credentials`
       );
     }
 
-    return result;
+    return result as AcquireEndpointResponse;
   }
 
   /**

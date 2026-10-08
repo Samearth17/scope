@@ -183,6 +183,15 @@ describe("structured endpoint acquisition", () => {
     expect(response.body.error).toContain("Invalid endpoint capability");
   });
 
+  it.each([undefined, null])("rejects a missing or null request body (%#)", async (body) => {
+    const response = await request(app, "/api/v1/endpoints/acquire", body);
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("Invalid endpoint capability");
+    expect(collection.find).not.toHaveBeenCalled();
+    expect(store.getSecret).not.toHaveBeenCalled();
+  });
+
   it("preserves raw key acquisition for existing callers", async () => {
     const response = await request(app, "/api/v1/keys/acquire", {
       capability: "azure-ai-inference",

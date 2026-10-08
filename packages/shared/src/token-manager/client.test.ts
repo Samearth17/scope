@@ -249,6 +249,7 @@ describe("TokenManagerClient", () => {
     });
 
     it.each([
+      null,
       {},
       { endpoint: "", apiKey: "key" },
       { endpoint: "https://foundry.example.com/models", apiKey: "" },
